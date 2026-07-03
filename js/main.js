@@ -473,23 +473,44 @@
     const label        = submitBtn.querySelector(".btn__label");
     const originalText = label ? label.textContent : "";
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!form.checkValidity()) { form.reportValidity(); return; }
 
+      submitBtn.disabled = true;
       submitBtn.classList.add("is-loading");
       submitBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span><span>שולח...</span>';
 
-      setTimeout(() => {
+      const formData = new FormData(form);
+      formData.set("_subject", "הרשמה חדשה · RideWithYoav");
+      if (!formData.has("friend")) formData.set("friend", "לא");
+
+      try {
+        const res = await fetch("https://formspree.io/f/xeebpwky", {
+          method: "POST",
+          body: formData,
+          headers: { Accept: "application/json" },
+        });
+
+        if (!res.ok) throw new Error("Formspree error");
+
         submitBtn.classList.remove("is-loading");
         submitBtn.classList.add("is-done");
         submitBtn.innerHTML = "<span>✓ נרשמת! ניצור קשר בקרוב</span>";
         setTimeout(() => {
+          submitBtn.disabled = false;
           submitBtn.classList.remove("is-done");
           submitBtn.innerHTML = `<span class="btn__label">${originalText}</span>`;
           form.reset();
         }, 3500);
-      }, 1400);
+      } catch {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove("is-loading");
+        submitBtn.innerHTML = "<span>שגיאה בשליחה — נסו שוב</span>";
+        setTimeout(() => {
+          submitBtn.innerHTML = `<span class="btn__label">${originalText}</span>`;
+        }, 3500);
+      }
     });
   }
 
